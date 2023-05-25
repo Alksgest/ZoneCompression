@@ -1,6 +1,7 @@
 using System.Text;
+using kr2.Compression;
 
-namespace kr2.Compression;
+namespace kr2;
 
 public enum ZoneCompressionMode
 {

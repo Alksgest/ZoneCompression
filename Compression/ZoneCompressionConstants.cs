@@ -53,6 +53,24 @@ internal static class ZoneCompressionConstants
             .ToArray();
     }
 
+    internal static int GetZoneCount(int elementsCount)
+    {
+        return elementsCount switch
+        {
+            > MaxElementsCount => throw new ArgumentException("Max elements per dict is 64"),
+            <= 1 * 15 => 1,
+            <= 2 * 14 => 2,
+            <= 3 * 13 => 3,
+            <= 4 * 12 => 4,
+            <= 5 * 11 => 5,
+            <= 6 * 10 => 6,
+            <= 7 * 9 => 7,
+            <= 8 * 8 => 8,
+        };
+    }
+
+    internal const int MaxElementsCount = 64;
+
     internal const byte CodeDLeftBytes = 208; // CodeD << 4
     internal const byte CodeELeftBytes = 224; // CodeE << 4
     internal const byte CodeFLeftBytes = 240; // CodeF << 4
