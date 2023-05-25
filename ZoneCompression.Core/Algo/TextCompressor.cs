@@ -9,7 +9,7 @@ public static class TextCompressor
     public static CompressedData Compress(string input)
     {
         var codeDictionaries = CodeLetterDictionaryGenerator.GenerateLetterToCodeDictionaries(input);
-        var sequences = codeDictionaries.Select(BitCompress).ToArray();
+        var sequences = codeDictionaries.Select(BitCompress).ToList();
 
         return new CompressedData
         {
@@ -23,8 +23,15 @@ public static class TextCompressor
 
         return string.Join("", slices);
     }
+    
+    public static string Decompress(byte[] data)
+    {
+        var compressedData = (CompressedData)data;
 
-    private static CodedSequence BitCompress(CodesDictionaryWithContentSize codesDictionaryWithContentSize)
+        return Decompress(compressedData);
+    }
+
+    private static CodedSequence BitCompress(CodesDictionaryWithInputSlice codesDictionaryWithInputSlice)
     {
         byte currentByte = 0;
         byte currentZone = 0;
@@ -33,10 +40,10 @@ public static class TextCompressor
 
         var resultBytes = new List<byte>();
 
-        var slice = codesDictionaryWithContentSize.InputSlice!;
+        var slice = codesDictionaryWithInputSlice.InputSlice!;
         var codeToLetterDictionary =
             CodeLetterDictionaryGenerator.GenerateCodeToLetterDictionary(
-                codesDictionaryWithContentSize.CodesDictionary);
+                codesDictionaryWithInputSlice.CodesDictionary);
 
         foreach (var ch in slice)
         {
@@ -88,14 +95,14 @@ public static class TextCompressor
             }
         }
 
-        var dictBytes = SerializationHelper.SerializeDictionary(codesDictionaryWithContentSize.CodesDictionary);
+        var dictBytes = SerializationHelper.SerializeDictionary(codesDictionaryWithInputSlice.CodesDictionary);
 
         return new CodedSequence
         {
             Data = resultBytes.ToArray(),
             Dictionary = dictBytes,
-            DictionarySize = dictBytes.Length,
-            DataSize = resultBytes.Count
+            // DictionarySize = dictBytes.Length,
+            // DataSize = resultBytes.Count
         };
     }
 
@@ -104,8 +111,9 @@ public static class TextCompressor
         var builder = new StringBuilder();
 
         byte currentZone = 0;
+        
         var letterToCodeDictionary =
-            SerializationHelper.DeserializeDictionary(sequence.Dictionary, sequence.DictionarySize);
+            SerializationHelper.DeserializeDictionary(sequence.Dictionary);
         var zoneCount = ZoneHelper.GetZoneCount(letterToCodeDictionary.Count);
         var zoneCodes = ZoneHelper.GetZoneCodes(zoneCount);
 

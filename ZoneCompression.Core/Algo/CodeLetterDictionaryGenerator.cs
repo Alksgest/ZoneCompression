@@ -5,11 +5,11 @@ namespace ZoneCompression.Core.Algo;
 
 internal static class CodeLetterDictionaryGenerator
 {
-    internal static IEnumerable<CodesDictionaryWithContentSize> GenerateLetterToCodeDictionaries(string input)
+    internal static IEnumerable<CodesDictionaryWithInputSlice> GenerateLetterToCodeDictionaries(string input)
     {
         var frequencyDictionaries = CreateFrequencyDictionaries(input);
 
-        var outputDictionaries = new List<CodesDictionaryWithContentSize>();
+        var outputDictionaries = new List<CodesDictionaryWithInputSlice>();
 
         var index = 0;
         var cursor = 0;
@@ -51,10 +51,9 @@ internal static class CodeLetterDictionaryGenerator
 
             var countToTake = fDict.Sum(el => el.Value);
 
-            outputDictionaries.Add(new CodesDictionaryWithContentSize
+            outputDictionaries.Add(new CodesDictionaryWithInputSlice
             {
                 CodesDictionary = letterToCodeDictionary,
-                ContentSize = fDict.Count * sizeof(char),
                 InputSlice = input.Skip(cursor).Take(countToTake)
             });
 

@@ -17,7 +17,7 @@ internal static class SerializationHelper
         return bytes;
     }
     
-    internal static Dictionary<byte, char> DeserializeDictionary(byte[] dict, int dictSize)
+    internal static Dictionary<byte, char> DeserializeDictionary(byte[] dict)
     {
         var result = new Dictionary<byte, char>();
 
@@ -25,7 +25,7 @@ internal static class SerializationHelper
         using var reader = new BinaryReader(stream);
         
         // Read keys and values
-        for (var i = 0; i < dictSize / 3; i++)
+        for (var i = 0; i < dict.Length / 3; i++)
         {
             var key = reader.ReadByte();
             var value = (char)reader.ReadInt16();
