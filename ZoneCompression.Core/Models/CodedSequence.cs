@@ -1,9 +1,9 @@
 namespace ZoneCompression.Core.Models;
 
-public struct CodedSequence
+public class CodedSequence
 {
-    public int DictionarySize;
-    public int DataSize;
-    public byte[] Dictionary;
-    public byte[] Data;
+    public int DictionarySize { get; init; }
+    public int DataSize { get; init; }
+    public byte[] Dictionary { get; init; }
+    public byte[] Data { get; init; }
 }

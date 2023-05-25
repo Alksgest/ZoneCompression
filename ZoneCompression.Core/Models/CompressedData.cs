@@ -1,6 +1,6 @@
 namespace ZoneCompression.Core.Models;
 
-public struct CompressedData
+public class CompressedData
 {
-    public CodedSequence[] Sequences;
+    public CodedSequence[] Sequences { get; init; }
 }
