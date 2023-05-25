@@ -1,4 +1,4 @@
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using kr2.Compression;
 
 namespace ZoneCompression.Compression;
@@ -17,7 +17,6 @@ public class CodesDictionaryWithContentSize
 
 public struct CodedSequence
 {
-    public int ZoneCount;
     public int DictionarySize;
     public int DataSize;
     public byte[] Dictionary;
@@ -34,12 +33,19 @@ public class ExtraZoneCompression
     public static CompressedData Compress(string input)
     {
         var codeDictionaries = GenerateLetterToCodeDictionaries(input);
-        var sequences = codeDictionaries.Select(BitCompress);
+        var sequences = codeDictionaries.Select(BitCompress).ToArray();
 
         return new CompressedData
         {
-            Sequences = sequences.ToArray()
+            Sequences = sequences
         };
+    }
+
+    public static string Decompress(CompressedData data)
+    {
+        var slices = data.Sequences.Select(BitDecompress);
+
+        return string.Join("", slices);
     }
 
     private static CodedSequence BitCompress(CodesDictionaryWithContentSize codesDictionaryWithContentSize)
@@ -108,7 +114,6 @@ public class ExtraZoneCompression
 
         return new CodedSequence
         {
-            // ZoneCount = ,
             Data = resultBytes.ToArray(),
             Dictionary = dictBytes,
             DictionarySize = dictBytes.Length,
@@ -116,90 +121,115 @@ public class ExtraZoneCompression
         };
     }
 
-    // private string BitDecompress(IEnumerable<byte> bytes, IReadOnlyDictionary<byte, char> letterToCodeDictionary)
-    // {
-    //     byte currentZone = 0;
-    //
-    //     var builder = new StringBuilder();
-    //
-    //     var zoneCodes = ZoneCompressionConstants.GetZoneCodes(_zoneCount);
-    //
-    //     foreach (var b in bytes)
-    //     {
-    //         var zone = GetZone(b, currentZone, zoneCodes);
-    //
-    //         if (currentZone == 0)
-    //         {
-    //             currentZone = zone;
-    //
-    //             var ch = letterToCodeDictionary[b];
-    //             builder.Append(ch);
-    //
-    //             continue;
-    //         }
-    //
-    //         if (zone == currentZone)
-    //         {
-    //             var leftPartOfByte = (byte)(b & ZoneCompressionConstants.CutTopByte);
-    //
-    //             var actualCode1 = (byte)(zone | leftPartOfByte >> 4);
-    //
-    //             var ch1 = letterToCodeDictionary[actualCode1];
-    //             builder.Append(ch1);
-    //
-    //             var rightPartOfByte = (byte)(b & ZoneCompressionConstants.CutLowByte);
-    //
-    //             var shifted = (byte)(rightPartOfByte << 4);
-    //             var isRightPartIsZone = CheckIfZone(shifted, zoneCodes);
-    //
-    //             if (isRightPartIsZone)
-    //             {
-    //                 currentZone = shifted;
-    //                 continue;
-    //             }
-    //
-    //             var actualCode2 = (byte)(zone | rightPartOfByte);
-    //
-    //             var ch2 = letterToCodeDictionary[actualCode2];
-    //             builder.Append(ch2);
-    //
-    //             continue;
-    //         }
-    //
-    //         currentZone = zone;
-    //
-    //         var chx = letterToCodeDictionary[b];
-    //         builder.Append(chx);
-    //     }
-    //
-    //     return builder.ToString();
-    // }
+    private static string BitDecompress(CodedSequence sequence)
+    {
+        var builder = new StringBuilder();
+    
+        byte currentZone = 0;
+        var letterToCodeDictionary = DeserializeDictionary(sequence.Dictionary, sequence.DictionarySize);
+        var zoneCount = ZoneCompressionConstants.GetZoneCount(letterToCodeDictionary.Count);
+        var zoneCodes = ZoneCompressionConstants.GetZoneCodes(zoneCount);
+
+        var bytes = sequence.Data;
+
+        for (var i = 0; i < bytes.Length; ++i)
+        {
+            var b = bytes[i];
+            
+            var zone = GetZone(b, currentZone, zoneCodes);
+    
+            if (currentZone == 0)
+            {
+                currentZone = zone;
+    
+                var ch = letterToCodeDictionary[b];
+                builder.Append(ch);
+    
+                continue;
+            }
+    
+            if (zone == currentZone)
+            {
+                var leftPartOfByte = (byte)(b & ZoneCompressionConstants.CutTopByte);
+    
+                var actualCode1 = (byte)(zone | leftPartOfByte >> 4);
+    
+                var ch1 = letterToCodeDictionary[actualCode1];
+                builder.Append(ch1);
+    
+                var rightPartOfByte = (byte)(b & ZoneCompressionConstants.CutLowByte);
+    
+                var shifted = (byte)(rightPartOfByte << 4);
+                var isRightPartIsZone = CheckIfZone(shifted, zoneCodes);
+    
+                if (isRightPartIsZone)
+                {
+                    currentZone = shifted;
+                    continue;
+                }
+    
+                var actualCode2 = (byte)(zone | rightPartOfByte);
+    
+                var ch2 = letterToCodeDictionary[actualCode2];
+                builder.Append(ch2);
+    
+                continue;
+            }
+    
+            currentZone = zone;
+    
+            var chx = letterToCodeDictionary[b];
+            builder.Append(chx);
+        }
+        
+    
+        return builder.ToString();
+    }
 
     private static byte[] SerializeDictionary(Dictionary<byte, char> codesDictionary)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream);
-        // // Write the count of dictionary entries
-        // writer.Write(codesDictionary.Count);
 
         foreach (var pair in codesDictionary)
         {
             writer.Write(pair.Key);
-            writer.Write(pair.Value);
+            writer.Write((short)pair.Value);
         }
 
-        return stream.ToArray();
+        var bytes = stream.ToArray();
+        // var tmp = DeserializeDictionary(bytes, bytes.Length);
+        return bytes;
+    }
+    
+    private static Dictionary<byte, char> DeserializeDictionary(byte[] dict, int dictSize)
+    {
+        var result = new Dictionary<byte, char>();
+
+        using var stream = new MemoryStream(dict);
+        using var reader = new BinaryReader(stream);
+        
+        // Read keys and values
+        for (var i = 0; i < dictSize / 3; i++)
+        {
+            var key = reader.ReadByte();
+            var value = (char)reader.ReadInt16();
+
+            result[key] = value;
+        }
+
+        return result;
     }
 
-    public static List<CodesDictionaryWithContentSize> GenerateLetterToCodeDictionaries(string input)
+    private static IEnumerable<CodesDictionaryWithContentSize> GenerateLetterToCodeDictionaries(string input)
     {
         var frequencyDictionaries = CreateFrequencyDictionaries(input);
 
-        var index = 0;
-
         var outputDictionaries = new List<CodesDictionaryWithContentSize>();
 
+        var index = 0;
         var cursor = 0;
+        var take = 0;
 
         foreach (var fDict in frequencyDictionaries)
         {
@@ -236,15 +266,17 @@ public class ExtraZoneCompression
                 }
             }
 
+            var countToTake = fDict.CodesDictionary.Sum(el => el.Value);
+
             outputDictionaries.Add(new CodesDictionaryWithContentSize
             {
                 CodesDictionary = letterToCodeDictionary,
                 ContentSize = fDict.CodesDictionary.Count * sizeof(char),
-                InputSlice = input.Skip(cursor).Take(fDict.CodesDictionary.Count)
+                InputSlice = input.Skip(cursor).Take(countToTake)
             });
 
             index = 0;
-            cursor += fDict.CodesDictionary.Count;
+            cursor += countToTake;
         }
 
         return outputDictionaries;
@@ -281,5 +313,17 @@ public class ExtraZoneCompression
     private static Dictionary<char, byte> GenerateCodeToLetterDictionary(Dictionary<byte, char> dict)
     {
         return dict.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+    }
+    
+    private static byte GetZone(byte currentByte, byte currentZone, IEnumerable<byte> zones)
+    {
+        var zone = (byte)(currentByte & ZoneCompressionConstants.CutTopByte);
+
+        return CheckIfZone(zone, zones) ? zone : currentZone;
+    }
+    
+    private static bool CheckIfZone(byte b, IEnumerable<byte> zones)
+    {
+        return zones.Contains(b);
     }
 }
