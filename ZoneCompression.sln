@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZoneCompression.Core", "ZoneCompression.Core\ZoneCompression.Core.csproj", "{CD60EDC0-727F-4806-937C-FBCDBDF8648B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZoneCompression.Tests", "ZoneCompression.Tests\ZoneCompression.Tests.csproj", "{342B7674-10E4-49E5-845B-9294305ACF28}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CD60EDC0-727F-4806-937C-FBCDBDF8648B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD60EDC0-727F-4806-937C-FBCDBDF8648B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD60EDC0-727F-4806-937C-FBCDBDF8648B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD60EDC0-727F-4806-937C-FBCDBDF8648B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{342B7674-10E4-49E5-845B-9294305ACF28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{342B7674-10E4-49E5-845B-9294305ACF28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{342B7674-10E4-49E5-845B-9294305ACF28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{342B7674-10E4-49E5-845B-9294305ACF28}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
